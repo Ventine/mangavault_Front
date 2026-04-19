@@ -1,0 +1,57 @@
+# ===================================================================
+# 1. DEPENDENCIAS (No se suben, se instalan con npm install)
+# ===================================================================
+node_modules/
+jspm_packages/
+
+# ===================================================================
+# 2. ARTEFACTOS DE COMPILACIÓN (Next.js y TypeScript)
+# ===================================================================
+.next/
+out/
+build/
+dist/
+.tsbuildinfo
+next-env.d.ts
+
+# ===================================================================
+# 3. DATOS SENSIBLES Y SECRETOS (¡CRÍTICO!)
+# ===================================================================
+# NUNCA subas estos archivos. Contienen tus URLs de Render y claves.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de logs de errores
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===================================================================
+# 4. CONFIGURACIÓN DE IDEs (VS Code, IntelliJ)
+# ===================================================================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iws
+*.iml
+*.ipr
+.history/
+
+# ===================================================================
+# 5. ARCHIVOS DEL SISTEMA OPERATIVO
+# ===================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# ===================================================================
+# 6. TESTING Y COBERTURA
+# ===================================================================
+coverage/
+.nyc_output/
