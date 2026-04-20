@@ -1,30 +1,51 @@
-import { Manga } from '@/src/types/manga';
-import { Star } from 'lucide-react';
+// src/components/MangaCard.tsx
 
-export default function MangaCard({ manga }: { manga: Manga }) {
+import { MangaItem } from '@/src/types/manga';
+
+interface Props {
+  manga: MangaItem;
+}
+
+export default function MangaCard({ manga }: Props) {
   return (
-    <div className="group relative bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500 transition-all duration-300 shadow-xl">
-      <div className="aspect-[3/4] overflow-hidden">
-        <img 
-          src={manga.imageUrl} 
-          alt={manga.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+    <article className="bg-[#FDFBF7] rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow duration-300">
+      
+      {/* Manejo dinámico de la Imagen */}
+      {manga.imageUrl ? (
+        <div 
+          className="aspect-[2/3] w-full bg-cover bg-center"
+          style={{ backgroundImage: `url(${manga.imageUrl})` }}
+          title={manga.title}
         />
-      </div>
-      <div className="p-4 bg-gradient-to-t from-black to-transparent">
-        <h3 className="text-white font-bold truncate text-sm" title={manga.title}>
+      ) : (
+        <div className="bg-slate-300 aspect-[2/3] w-full flex flex-col items-center justify-center text-slate-500 p-4 text-center">
+          <span className="font-bold text-lg text-slate-400">Sin Imagen</span>
+          <span className="text-xs mt-2">Agrega 'images' al backend</span>
+        </div>
+      )}
+
+      {/* Contenido de la Tarjeta */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="font-bold text-slate-800 leading-tight line-clamp-2 mb-1" title={manga.title}>
           {manga.title}
         </h3>
-        <div className="flex justify-between items-center mt-2">
-          <div className="flex items-center text-yellow-500 text-xs">
-            <Star className="w-3 h-3 mr-1 fill-current" />
-            {manga.score || 'N/A'}
-          </div>
-          <span className="px-2 py-0.5 bg-blue-600 text-[10px] text-white rounded-full uppercase font-semibold">
-            {manga.status}
-          </span>
+        
+        {/* Mostramos status o capítulos dependiendo de lo que llegue */}
+        <div className="flex justify-between items-center mb-3">
+          <p className="text-xs text-slate-500 font-medium">
+            Caps: {manga.chapters ? manga.chapters : '?'}
+          </p>
+          {manga.score && (
+            <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-md">
+              ★ {manga.score}
+            </span>
+          )}
         </div>
+
+        <p className="text-sm text-slate-600 line-clamp-3 mt-auto border-t border-slate-100 pt-2">
+          {manga.synopsis ? manga.synopsis : 'Sin sinopsis disponible.'}
+        </p>
       </div>
-    </div>
+    </article>
   );
 }
