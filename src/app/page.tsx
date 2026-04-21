@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { TopMangasResponse, MangaItem } from '@/src/types/manga';
-import { ApiStatus } from '@/src/types/status'; // Asegúrate de tener este tipo
+import { ApiStatus } from '@/src/types/status';
+import { SyncResponse } from '@/src/types/sync';
+
 import EndpointNav from '@/src/components/EndpointNav';
 import MangaGrid from '@/src/components/MangaGrid';
 import FilterBar from '@/src/components/FilterBar';
-import StatusModal from '@/src/components/StatusModal'; // Importamos el nuevo modal
+import StatusModal from '@/src/components/StatusModal';
+import SyncAlertModal from '@/src/components/SyncAlertModal';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -22,10 +25,15 @@ export default function Home() {
   const [currentType, setCurrentType] = useState('manga');
   const [currentFilter, setCurrentFilter] = useState('bypopularity');
 
-  // --- ESTADOS DE ESTATUS API ---
+  // --- ESTADOS DE ACCIONES (ESTATUS Y SYNC) ---
   const [statusData, setStatusData] = useState<ApiStatus | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [previousEndpoint, setPreviousEndpoint] = useState('Top'); // Para recordar dónde estábamos
+  
+  const [syncData, setSyncData] = useState<SyncResponse | null>(null);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  
+  const [isStatusLoading, setIsStatusLoading] = useState(false); 
+  const [previousEndpoint, setPreviousEndpoint] = useState('Top');
 
   // 1. EFECTO: CARGAR MANGAS
   useEffect(() => {
@@ -78,9 +86,8 @@ export default function Home() {
 
     if (activeEndpoint === 'Top') {
       fetchMangas();
-      setPreviousEndpoint('Top'); // Guardamos que estamos en Top
+      setPreviousEndpoint('Top');
     } 
-    // Protegemos la grilla: Si el usuario hace clic en una "Acción" (como Estatus API), NO borramos los mangas
     else if (!['Estatus API', 'Sincronizar', 'Agregar Favorito'].includes(activeEndpoint)) {
       setMangas([]);
       setLoading(false);
@@ -97,6 +104,7 @@ export default function Home() {
   // 2. EFECTO: OBTENER ESTATUS API
   useEffect(() => {
     const fetchStatus = async () => {
+      setIsStatusLoading(true);
       try {
         const response = await fetch('/api/v1/mangas/status');
         if (!response.ok) throw new Error('Fallo al obtener el estatus');
@@ -107,8 +115,7 @@ export default function Home() {
         console.error("Error Status:", error);
         alert("El servidor en Render no está respondiendo. Por favor, espera a que despierte.");
       } finally {
-        // Devolvemos silenciosamente el activeEndpoint a lo que el usuario estaba viendo
-        // para que el botón deje de estar "presionado" y no rompa la navegación
+        setIsStatusLoading(false);
         setActiveEndpoint(previousEndpoint);
       }
     };
@@ -118,9 +125,44 @@ export default function Home() {
     }
   }, [activeEndpoint, previousEndpoint]);
 
+  // 3. EFECTO: SINCRONIZAR BÓVEDA
+  useEffect(() => {
+    const triggerSync = async () => {
+      setIsStatusLoading(true);
+      try {
+        const response = await fetch('/api/v1/mangas/vault/sync', {
+          method: 'PATCH',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Código ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setSyncData(data);
+        setIsSyncModalOpen(true);
+      } catch (error: any) {
+        console.error("Error exacto del Sync:", error);
+        alert(`Fallo en la sincronización.\nMotivo: ${error.message}`);
+      } finally {
+        setIsStatusLoading(false);
+        setActiveEndpoint(previousEndpoint);
+      }
+    };
+
+    if (activeEndpoint === 'Sincronizar') {
+      triggerSync();
+    }
+  }, [activeEndpoint, previousEndpoint]);
+
+
   return (
     <main 
-      className="min-h-screen relative font-sans flex flex-col"
+      className="min-h-screen relative font-sans flex flex-col overflow-hidden"
       style={{
         backgroundImage: "url('https://i.ytimg.com/vi/eAMeMkVsjiw/maxresdefault.jpg')",
         backgroundSize: 'cover',
@@ -128,36 +170,64 @@ export default function Home() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="absolute inset-0 bg-[#FDFBF7]/85 backdrop-blur-sm z-0 pointer-events-none"></div>
+      {/* Fondo con transición suave */}
+      <div className="absolute inset-0 bg-[#FDFBF7]/85 backdrop-blur-sm z-0 pointer-events-none transition-all duration-700"></div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 flex-1 flex flex-col">
+      <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 flex-1 flex flex-col animate-in fade-in duration-700">
         
-        <header className="mb-6 border-b border-slate-400/30 pb-4">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight">MangaVault</h1>
-          <p className="text-slate-600 mt-1 font-medium">Explorando y sincronizando tu colección.</p>
+        {/* HEADER MEJORADO VISUALMENTE */}
+        <header className="mb-8 pt-4 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-300/50">
+          <div className="flex items-center gap-4">
+            {/* Ícono de Bóveda/Libro interactivo */}
+            <div className="bg-slate-800 text-[#FDFBF7] p-3.5 rounded-2xl shadow-md transform transition hover:scale-105 hover:rotate-3 cursor-default">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-500 tracking-tight drop-shadow-sm">
+                MangaVault
+              </h1>
+              <p className="text-slate-500 mt-1 font-bold tracking-widest uppercase text-[10px] md:text-xs">
+                Explorador & Sincronizador
+              </p>
+            </div>
+          </div>
         </header>
 
-        <EndpointNav activeEndpoint={activeEndpoint} setActiveEndpoint={setActiveEndpoint} />
+        <EndpointNav 
+          activeEndpoint={activeEndpoint} 
+          setActiveEndpoint={setActiveEndpoint} 
+          isStatusLoading={isStatusLoading}
+        />
 
-        {/* Mantenemos el filtro visible si estábamos en Top, incluso si hacemos clic en Estatus */}
-        {(activeEndpoint === 'Top' || previousEndpoint === 'Top') && (
-          <FilterBar 
-            activeEndpoint={activeEndpoint === 'Estatus API' ? previousEndpoint : activeEndpoint}
-            currentType={currentType}
-            setCurrentType={setCurrentType}
-            currentFilter={currentFilter}
-            setCurrentFilter={setCurrentFilter}
-            setPage={setPage}
-          />
-        )}
+        {/* Animación de entrada para los filtros */}
+        <div className="animate-in slide-in-from-bottom-4 fade-in duration-500">
+          {(activeEndpoint === 'Top' || previousEndpoint === 'Top') && (
+            <FilterBar 
+              activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
+              currentType={currentType}
+              setCurrentType={setCurrentType}
+              currentFilter={currentFilter}
+              setCurrentFilter={setCurrentFilter}
+              setPage={setPage}
+            />
+          )}
+        </div>
 
-        <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col">
+        <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col animate-in fade-in duration-700 delay-150">
+          
+          {/* ALERTA DE CARGA MODERNA TIPO TOAST */}
           {loading && slowLoading && (
-            <div className="flex justify-center mb-6">
-              <div className="bg-amber-100 border border-amber-300 text-amber-800 px-6 py-3 rounded-full flex items-center gap-3 shadow-sm animate-pulse">
-                <span className="text-xl">☕</span>
-                <p className="font-medium text-sm">
-                  Despertando la API en Render... esto puede tomar alrededor de un minuto.
+            <div className="flex justify-center mb-8">
+              <div className="bg-white/80 backdrop-blur-md border border-amber-200 text-amber-800 px-5 py-3 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-900/5 animate-in slide-in-from-top-4 fade-in duration-300">
+                {/* Ping de radar en lugar del emoji de café para un look más técnico */}
+                <div className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                </div>
+                <p className="font-bold text-sm">
+                  Despertando la bóveda en Render... <span className="font-medium opacity-80">Esto puede tomar un minuto.</span>
                 </p>
               </div>
             </div>
@@ -169,18 +239,28 @@ export default function Home() {
             page={page} 
             setPage={setPage} 
             hasNextPage={hasNextPage}
-            activeEndpoint={previousEndpoint} // Le pasamos la vista real, no la acción
+            activeEndpoint={previousEndpoint}
             error={apiError}
           />
         </section>
 
+        {/* FOOTER SUTIL PARA CERRAR EL DISEÑO */}
+        <footer className="mt-12 py-6 border-t border-slate-300/40 text-center text-slate-400 text-sm font-medium">
+          MangaVault © {new Date().getFullYear()} — Bóveda de colecciones
+        </footer>
+
       </div>
 
-      {/* RENDERIZAMOS EL MODAL DE ESTATUS FUERA DEL FLUJO PRINCIPAL */}
       <StatusModal 
         isOpen={isStatusModalOpen} 
         onClose={() => setIsStatusModalOpen(false)} 
         data={statusData} 
+      />
+      
+      <SyncAlertModal 
+        isOpen={isSyncModalOpen} 
+        onClose={() => setIsSyncModalOpen(false)} 
+        data={syncData} 
       />
     </main>
   );
