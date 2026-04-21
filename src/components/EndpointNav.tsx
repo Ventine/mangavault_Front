@@ -25,7 +25,8 @@ export default function EndpointNav({ activeEndpoint, setActiveEndpoint }: Props
             <button
               onClick={() => setActiveEndpoint(ep.name)}
               aria-pressed={activeEndpoint === ep.name}
-              className={`px-6 py-2.5 text-base md:text-lg rounded-full font-bold transition-all duration-300 outline-none focus-visible:ring-4 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFBF7]
+              // Se agregó 'cursor-pointer' y mejoramos el focus para el teclado
+              className={`cursor-pointer px-6 py-2.5 text-base md:text-lg rounded-full font-bold transition-all duration-300 outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFBF7]
                 ${ep.color}
                 ${activeEndpoint === ep.name 
                   ? 'ring-2 ring-slate-600 ring-offset-2 ring-offset-[#FDFBF7] scale-105 shadow-md z-20' 
