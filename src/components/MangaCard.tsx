@@ -42,10 +42,18 @@ export default function MangaCard({ manga }: Props) {
           </h3>
           
           {/* Etiquetas (Badges) de Color */}
+          {/* Etiquetas (Badges) de Color */}
           <div className="flex justify-between items-center mb-3">
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${chapterBadgeClass}`}>
-              {hasChapters ? `${manga.chapters} Caps` : 'Emisión / ?'}
-            </span>
+            {/* Si tiene votos (es una recomendación), mostramos el badge de votos */}
+            {manga.votes !== undefined ? (
+              <span className="text-xs font-black px-2.5 py-1 rounded-full shadow-sm bg-pink-100 text-pink-700 ring-1 ring-pink-300">
+                ❤️ {manga.votes} Votos
+              </span>
+            ) : (
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${chapterBadgeClass}`}>
+                {hasChapters ? `${manga.chapters} Caps` : 'Emisión / ?'}
+              </span>
+            )}
             
             {manga.score && (
               <span className="text-xs font-black text-amber-700 bg-amber-200 px-2.5 py-1 rounded-full ring-1 ring-amber-400 shadow-sm flex items-center gap-1">
@@ -53,7 +61,7 @@ export default function MangaCard({ manga }: Props) {
               </span>
             )}
           </div>
-
+          
           {/* Área de Sinopsis con Botón */}
           <div className="mt-auto border-t border-slate-100 pt-3 flex flex-col">
             <p className="text-sm text-slate-500 line-clamp-2 mb-2">

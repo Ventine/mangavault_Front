@@ -43,3 +43,16 @@ export interface TopMangasResponse {
   data: MangaItem[];
   pagination: PaginationData;
 }
+
+export interface MangaItem {
+  title: string;
+  id?: number | string; 
+  imageUrl?: string;
+  score?: number;
+  status?: string;
+  chapters?: number;
+  synopsis?: string;
+  // NUEVOS CAMPOS AÑADIDOS
+  url?: string;
+  votes?: number;
+}

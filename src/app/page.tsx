@@ -10,6 +10,7 @@ import MangaGrid from '@/src/components/MangaGrid';
 import FilterBar from '@/src/components/FilterBar';
 import StatusModal from '@/src/components/StatusModal';
 import SyncAlertModal from '@/src/components/SyncAlertModal';
+import RecommendationBar from '@/src/components/RecommendationBar';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -159,6 +160,35 @@ export default function Home() {
     }
   }, [activeEndpoint, previousEndpoint]);
 
+  // --- FUNCIÓN DE BÚSQUEDA DE RECOMENDACIONES ---
+  const handleSearchRecommendations = async (id: string) => {
+    setLoading(true);
+    setApiError(null);
+    setPreviousEndpoint('Recomendaciones'); // Fijamos la vista
+    
+    try {
+      const response = await fetch(`/api/v1/mangas/vault/${id}/recommendations`);
+      
+      if (!response.ok) {
+        throw new Error('No se pudieron obtener recomendaciones para este ID.');
+      }
+      
+      const data = await response.json();
+      
+      // Nota Senior: Como tu API de recomendaciones devuelve un array directo []
+      // y no un objeto { data: [] }, lo pasamos directamente a setMangas
+      setMangas(data || []);
+      setHasNextPage(false); // Las recomendaciones no tienen paginación por ahora
+      
+    } catch (error: any) {
+      console.error("Error Recommendations:", error);
+      setApiError(error.message);
+      setMangas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <main 
@@ -214,6 +244,13 @@ export default function Home() {
             />
           )}
         </div>
+
+        {/* BARRA DE BÚSQUEDA DE RECOMENDACIONES */}
+        <RecommendationBar 
+          activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
+          onSearch={handleSearchRecommendations}
+          isLoading={loading}
+        />
 
         <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col animate-in fade-in duration-700 delay-150">
           
