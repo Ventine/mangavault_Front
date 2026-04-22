@@ -13,6 +13,7 @@ import SyncAlertModal from '@/src/components/SyncAlertModal';
 import RecommendationBar from '@/src/components/RecommendationBar';
 import SearchIdBar from '@/src/components/SearchIdBar';
 import SingleMangaDetail from '@/src/components/SingleMangaDetail';
+import SearchNameBar from '@/src/components/SearchNameBar';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -218,6 +219,35 @@ export default function Home() {
     }
   };
 
+  // --- FUNCIÓN DE BÚSQUEDA POR NOMBRE ---
+  const handleSearchByName = async (name: string) => {
+    setLoading(true);
+    setApiError(null);
+    setPreviousEndpoint('Buscar Nombre');
+    
+    try {
+      // Usamos el endpoint con la query param `q`
+      const response = await fetch(`/api/v1/mangas/search?q=${encodeURIComponent(name)}`);
+      
+      if (!response.ok) {
+        throw new Error(`No se encontró ningún manga con el título "${name}".`);
+      }
+      
+      const data = await response.json();
+      
+      // Igual que con el ID, lo metemos en un arreglo para reutilizar el estado
+      setMangas([data]); 
+      setHasNextPage(false);
+      
+    } catch (error: any) {
+      console.error("Error Name Search:", error);
+      setApiError(error.message);
+      setMangas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main 
       className="min-h-screen relative font-sans flex flex-col overflow-hidden"
@@ -289,6 +319,11 @@ export default function Home() {
           isLoading={loading}
         />
 
+        <SearchNameBar 
+          activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
+          onSearch={handleSearchByName}
+          isLoading={loading}
+        />
         <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col animate-in fade-in duration-700 delay-150">
           
           {loading && slowLoading && (
