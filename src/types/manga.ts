@@ -52,7 +52,9 @@ export interface MangaItem {
   status?: string;
   chapters?: number;
   synopsis?: string;
-  // NUEVOS CAMPOS AÑADIDOS
   url?: string;
   votes?: number;
+  type?: string;
+  rank?: number;
+  genres?: string[];
 }

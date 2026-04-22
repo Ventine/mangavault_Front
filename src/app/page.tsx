@@ -11,6 +11,8 @@ import FilterBar from '@/src/components/FilterBar';
 import StatusModal from '@/src/components/StatusModal';
 import SyncAlertModal from '@/src/components/SyncAlertModal';
 import RecommendationBar from '@/src/components/RecommendationBar';
+import SearchIdBar from '@/src/components/SearchIdBar';
+import SingleMangaDetail from '@/src/components/SingleMangaDetail';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -188,7 +190,33 @@ export default function Home() {
       setLoading(false);
     }
   };
-
+  // --- FUNCIÓN DE BÚSQUEDA POR ID ---
+  const handleSearchById = async (id: string) => {
+    setLoading(true);
+    setApiError(null);
+    setPreviousEndpoint('Buscar ID');
+    
+    try {
+      const response = await fetch(`/api/v1/mangas/${id}`);
+      
+      if (!response.ok) {
+        throw new Error('No pudimos encontrar este Manga en la base de datos externa.');
+      }
+      
+      const data = await response.json();
+      
+      // Lo metemos en un arreglo para reutilizar el estado 'mangas'
+      setMangas([data]); 
+      setHasNextPage(false);
+      
+    } catch (error: any) {
+      console.error("Error ID Search:", error);
+      setApiError(error.message);
+      setMangas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main 
@@ -252,9 +280,17 @@ export default function Home() {
           isLoading={loading}
         />
 
+        {/* BARRA DE BÚSQUEDA DE RECOMENDACIONES (Si ya la tienes) */}
+        
+        {/* NUEVA BARRA DE BÚSQUEDA DE ID */}
+        <SearchIdBar 
+          activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
+          onSearch={handleSearchById}
+          isLoading={loading}
+        />
+
         <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col animate-in fade-in duration-700 delay-150">
           
-          {/* ALERTA DE CARGA MODERNA TIPO TOAST */}
           {loading && slowLoading && (
             <div className="flex justify-center mb-8">
               <div className="bg-white/80 backdrop-blur-md border border-amber-200 text-amber-800 px-5 py-3 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-900/5 animate-in slide-in-from-top-4 fade-in duration-300">
@@ -270,15 +306,24 @@ export default function Home() {
             </div>
           )}
 
-          <MangaGrid 
-            loading={loading} 
-            mangas={mangas} 
-            page={page} 
-            setPage={setPage} 
-            hasNextPage={hasNextPage}
-            activeEndpoint={previousEndpoint}
-            error={apiError}
-          />
+          {/* LÓGICA DE RENDERIZADO: Si estamos en "Buscar ID", mostramos la tarjeta Premium */}
+          {previousEndpoint === 'Buscar ID' ? (
+            <SingleMangaDetail 
+              loading={loading} 
+              error={apiError} 
+              manga={mangas[0] || null} 
+            />
+          ) : (
+            <MangaGrid 
+              loading={loading} 
+              mangas={mangas} 
+              page={page} 
+              setPage={setPage} 
+              hasNextPage={hasNextPage}
+              activeEndpoint={previousEndpoint}
+              error={apiError}
+            />
+          )}
         </section>
 
         {/* FOOTER SUTIL PARA CERRAR EL DISEÑO */}
