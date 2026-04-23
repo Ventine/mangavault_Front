@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { MangaItem } from '@/src/types/manga';
+import FavoriteButton from './FavoriteButton'; // <-- NUEVA IMPORTACIÓN
 
 interface Props {
   manga: MangaItem;
+  isFavoriteView?: boolean; // <-- NUEVO: Para saber si estamos viendo la bóveda
+  onToggle?: () => void;
 }
 
-export default function MangaCard({ manga }: Props) {
+export default function MangaCard({ manga, isFavoriteView = false, onToggle }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Imagen por defecto
@@ -34,6 +37,8 @@ export default function MangaCard({ manga }: Props) {
           {/* Sombra interna inferior que aparece al hacer hover para darle profundidad */}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
+
+        <FavoriteButton mangaId={manga.id} isInitiallyFavorite={isFavoriteView} onToggle={onToggle} /> 
 
         {/* Contenido de la Tarjeta */}
         <div className="p-4 flex flex-col flex-1 bg-gradient-to-b from-white to-slate-50/50">

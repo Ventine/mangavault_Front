@@ -9,9 +9,10 @@ interface Props {
   hasNextPage: boolean;
   activeEndpoint: string;
   error: string | null; // Nuevo prop para manejar errores reales de la API
+  onRefresh?: () => void;
 }
 
-export default function MangaGrid({ loading, mangas, page, setPage, hasNextPage, activeEndpoint, error }: Props) {
+export default function MangaGrid({ loading, mangas, page, setPage, hasNextPage, activeEndpoint, error, onRefresh }: Props) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6">
@@ -60,13 +61,20 @@ export default function MangaGrid({ loading, mangas, page, setPage, hasNextPage,
     );
   }
 
+  const isFavoriteView = activeEndpoint === 'Ver Favoritos';
+
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
-        {mangas.map((manga, index) => (
-          <MangaCard key={manga.title + index} manga={manga} />
-        ))}
-      </div>
+    {mangas.map((manga, index) => (
+      <MangaCard 
+        key={manga.title + index} 
+        manga={manga} 
+        isFavoriteView={isFavoriteView} // <-- SE LO PASAMOS AQUÍ
+        onToggle={onRefresh}
+      />
+      ))}
+    </div>
 
       <div className="flex justify-center items-center gap-4 mt-auto py-6 border-t border-slate-400/30">
         <button

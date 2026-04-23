@@ -1,4 +1,5 @@
 import { MangaItem } from '@/src/types/manga';
+import FavoriteButton from './FavoriteButton';
 
 interface Props {
   loading: boolean;
@@ -54,7 +55,7 @@ export default function SingleMangaDetail({ loading, error, manga }: Props) {
             className="w-full h-auto aspect-[2/3] object-cover rounded-2xl shadow-lg ring-1 ring-slate-900/5"
           />
         </div>
-
+        <FavoriteButton mangaId={manga.id} />
         {/* Detalles del Manga */}
         <div className="flex-1 p-6 md:p-10 md:pl-4 flex flex-col relative z-10">
           

@@ -14,6 +14,7 @@ import RecommendationBar from '@/src/components/RecommendationBar';
 import SearchIdBar from '@/src/components/SearchIdBar';
 import SingleMangaDetail from '@/src/components/SingleMangaDetail';
 import SearchNameBar from '@/src/components/SearchNameBar';
+import ActionAlert from '../components/ActionAlert';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -38,6 +39,9 @@ export default function Home() {
   
   const [isStatusLoading, setIsStatusLoading] = useState(false); 
   const [previousEndpoint, setPreviousEndpoint] = useState('Top');
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // 1. EFECTO: CARGAR MANGAS
   useEffect(() => {
@@ -103,7 +107,7 @@ export default function Home() {
       controller.abort();
       clearTimeout(slowLoadTimeout);
     };
-  }, [page, currentType, currentFilter, activeEndpoint]);
+  }, [page, currentType, currentFilter, activeEndpoint, refreshKey]);
 
   // 2. EFECTO: OBTENER ESTATUS API
   useEffect(() => {
@@ -162,6 +166,46 @@ export default function Home() {
       triggerSync();
     }
   }, [activeEndpoint, previousEndpoint]);
+
+  // --- FUNCIÓN DE BÚSQUEDA DE FAVORITOS (GET) ---
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      setLoading(true);
+      setApiError(null);
+      setPreviousEndpoint('Ver Favoritos');
+      
+      try {
+        // La API espera base 0 para la página, así que restamos 1
+        const apiPage = page - 1;
+        // Subimos el size a 10 para que la grilla no se vea vacía
+        const response = await fetch(`/api/v1/mangas/vault?page=${apiPage}&size=10&sort=title,asc`);
+        
+        if (!response.ok) {
+          throw new Error('No se pudo acceder a la bóveda de favoritos.');
+        }
+        
+        const data = await response.json();
+        
+        // Manejo defensivo: Spring Boot suele mandar los datos dentro de "content"
+        const favMangas = data.content || data.data || (Array.isArray(data) ? data : []);
+        setMangas(favMangas);
+        
+        // Manejo de paginación de Spring Boot ('last' es true si es la última página)
+        setHasNextPage(data.last !== undefined ? !data.last : false);
+        
+      } catch (error: any) {
+        console.error("Error Favorites:", error);
+        setApiError(error.message);
+        setMangas([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (activeEndpoint === 'Ver Favoritos') {
+      fetchFavorites();
+    }
+  }, [activeEndpoint, page, refreshKey]); // Se ejecuta si cambia de endpoint o de página
 
   // --- FUNCIÓN DE BÚSQUEDA DE RECOMENDACIONES ---
   const handleSearchRecommendations = async (id: string) => {
@@ -248,6 +292,14 @@ export default function Home() {
     }
   };
 
+  const handleActionComplete = () => {
+    if (activeEndpoint === 'Ver Favoritos') {
+      setShowAlert(true);
+      setRefreshKey(prev => prev + 1); // Esto dispara el useEffect automáticamente
+      setTimeout(() => setShowAlert(false), 3000);
+    }
+  };
+
   return (
     <main 
       className="min-h-screen relative font-sans flex flex-col overflow-hidden"
@@ -260,7 +312,7 @@ export default function Home() {
     >
       {/* Fondo con transición suave */}
       <div className="absolute inset-0 bg-[#FDFBF7]/85 backdrop-blur-sm z-0 pointer-events-none transition-all duration-700"></div>
-
+      <ActionAlert message="Manga eliminado de la bóveda" isVisible={showAlert} />
       <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 flex-1 flex flex-col animate-in fade-in duration-700">
         
         {/* HEADER MEJORADO VISUALMENTE */}
@@ -357,6 +409,7 @@ export default function Home() {
               hasNextPage={hasNextPage}
               activeEndpoint={previousEndpoint}
               error={apiError}
+              onRefresh={handleActionComplete}
             />
           )}
         </section>
