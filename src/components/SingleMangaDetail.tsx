@@ -5,9 +5,10 @@ interface Props {
   loading: boolean;
   error: string | null;
   manga: MangaItem | null;
+  onToggle?: () => void; // Agregado para mantener la comunicación con page.tsx
 }
 
-export default function SingleMangaDetail({ loading, error, manga }: Props) {
+export default function SingleMangaDetail({ loading, error, manga, onToggle }: Props) {
   if (loading) {
     return (
       <div className="w-full max-w-4xl mx-auto bg-white/50 rounded-3xl p-6 md:p-8 animate-pulse flex flex-col md:flex-row gap-8 shadow-sm border border-slate-100">
@@ -43,9 +44,16 @@ export default function SingleMangaDetail({ loading, error, manga }: Props) {
     <div className="w-full max-w-5xl mx-auto animate-in zoom-in-95 duration-500">
       <article className="bg-[#FDFBF7] rounded-[2rem] shadow-xl shadow-indigo-900/5 border border-white overflow-hidden flex flex-col md:flex-row relative">
         
+        {/* BOTÓN DE FAVORITOS: Posicionado absolutamente en la esquina de la tarjeta */}
+        <FavoriteButton 
+          mangaId={manga.id} 
+          displayMode="text" 
+          onToggle={onToggle}
+        />
+        
         {/* Decoración de fondo */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-50 translate-y-1/3 -translate-x-1/3"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/3 z-0 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-50 translate-y-1/3 -translate-x-1/3 z-0 pointer-events-none"></div>
 
         {/* Imagen del Manga */}
         <div className="w-full md:w-[340px] shrink-0 p-4 md:p-6 relative z-10">
@@ -55,7 +63,7 @@ export default function SingleMangaDetail({ loading, error, manga }: Props) {
             className="w-full h-auto aspect-[2/3] object-cover rounded-2xl shadow-lg ring-1 ring-slate-900/5"
           />
         </div>
-        <FavoriteButton mangaId={manga.id} />
+        
         {/* Detalles del Manga */}
         <div className="flex-1 p-6 md:p-10 md:pl-4 flex flex-col relative z-10">
           
@@ -72,11 +80,11 @@ export default function SingleMangaDetail({ loading, error, manga }: Props) {
             )}
           </div>
 
-          <h2 className="text-3xl md:text-5xl font-black text-slate-800 leading-tight mb-4 tracking-tight">
+          <h2 className="text-3xl md:text-5xl font-black text-slate-800 leading-tight mb-4 tracking-tight md:pr-32">
             {manga.title}
           </h2>
 
-          <div className="flex items-center gap-6 mb-8 bg-white/60 p-4 rounded-2xl border border-slate-100 w-fit backdrop-blur-sm">
+          <div className="flex items-center gap-6 mb-8 bg-white/60 p-4 rounded-2xl border border-slate-100 w-fit backdrop-blur-sm shadow-sm">
             {manga.score && (
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Puntuación</p>

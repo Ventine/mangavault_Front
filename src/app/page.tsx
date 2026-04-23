@@ -14,7 +14,7 @@ import RecommendationBar from '@/src/components/RecommendationBar';
 import SearchIdBar from '@/src/components/SearchIdBar';
 import SingleMangaDetail from '@/src/components/SingleMangaDetail';
 import SearchNameBar from '@/src/components/SearchNameBar';
-import ActionAlert from '../components/ActionAlert';
+import ActionAlert from '@/src/components/ActionAlert';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -175,22 +175,24 @@ export default function Home() {
       setPreviousEndpoint('Ver Favoritos');
       
       try {
-        // La API espera base 0 para la página, así que restamos 1
         const apiPage = page - 1;
-        // Subimos el size a 10 para que la grilla no se vea vacía
         const response = await fetch(`/api/v1/mangas/vault?page=${apiPage}&size=10&sort=title,asc`);
+        
+        // MANEJO DEL 204: Si la bóveda está vacía
+        if (response.status === 204) {
+          setMangas([]);
+          setHasNextPage(false);
+          setLoading(false);
+          return; 
+        }
         
         if (!response.ok) {
           throw new Error('No se pudo acceder a la bóveda de favoritos.');
         }
         
         const data = await response.json();
-        
-        // Manejo defensivo: Spring Boot suele mandar los datos dentro de "content"
         const favMangas = data.content || data.data || (Array.isArray(data) ? data : []);
         setMangas(favMangas);
-        
-        // Manejo de paginación de Spring Boot ('last' es true si es la última página)
         setHasNextPage(data.last !== undefined ? !data.last : false);
         
       } catch (error: any) {
@@ -205,13 +207,13 @@ export default function Home() {
     if (activeEndpoint === 'Ver Favoritos') {
       fetchFavorites();
     }
-  }, [activeEndpoint, page, refreshKey]); // Se ejecuta si cambia de endpoint o de página
+  }, [activeEndpoint, page, refreshKey]);
 
   // --- FUNCIÓN DE BÚSQUEDA DE RECOMENDACIONES ---
   const handleSearchRecommendations = async (id: string) => {
     setLoading(true);
     setApiError(null);
-    setPreviousEndpoint('Recomendaciones'); // Fijamos la vista
+    setPreviousEndpoint('Recomendaciones');
     
     try {
       const response = await fetch(`/api/v1/mangas/vault/${id}/recommendations`);
@@ -221,11 +223,8 @@ export default function Home() {
       }
       
       const data = await response.json();
-      
-      // Nota Senior: Como tu API de recomendaciones devuelve un array directo []
-      // y no un objeto { data: [] }, lo pasamos directamente a setMangas
       setMangas(data || []);
-      setHasNextPage(false); // Las recomendaciones no tienen paginación por ahora
+      setHasNextPage(false);
       
     } catch (error: any) {
       console.error("Error Recommendations:", error);
@@ -235,6 +234,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
   // --- FUNCIÓN DE BÚSQUEDA POR ID ---
   const handleSearchById = async (id: string) => {
     setLoading(true);
@@ -249,8 +249,6 @@ export default function Home() {
       }
       
       const data = await response.json();
-      
-      // Lo metemos en un arreglo para reutilizar el estado 'mangas'
       setMangas([data]); 
       setHasNextPage(false);
       
@@ -270,7 +268,6 @@ export default function Home() {
     setPreviousEndpoint('Buscar Nombre');
     
     try {
-      // Usamos el endpoint con la query param `q`
       const response = await fetch(`/api/v1/mangas/search?q=${encodeURIComponent(name)}`);
       
       if (!response.ok) {
@@ -279,9 +276,10 @@ export default function Home() {
       
       const data = await response.json();
       
-      // Igual que con el ID, lo metemos en un arreglo para reutilizar el estado
-      setMangas([data]); 
-      setHasNextPage(false);
+      // CAMBIO CLAVE: Como data ya es un array (ej: [ {id: 11, title: "Naruto"}, ... ]), 
+      // lo pasamos directamente. Si viene nulo o indefinido, pasamos [] por seguridad.
+      setMangas(data || []); 
+      setHasNextPage(false); // Asumimos que esta búsqueda no tiene paginación por ahora
       
     } catch (error: any) {
       console.error("Error Name Search:", error);
@@ -293,9 +291,9 @@ export default function Home() {
   };
 
   const handleActionComplete = () => {
-    if (activeEndpoint === 'Ver Favoritos') {
+    if (activeEndpoint === 'Ver Favoritos' || previousEndpoint === 'Buscar ID' || previousEndpoint === 'Buscar Nombre') {
       setShowAlert(true);
-      setRefreshKey(prev => prev + 1); // Esto dispara el useEffect automáticamente
+      setRefreshKey(prev => prev + 1);
       setTimeout(() => setShowAlert(false), 3000);
     }
   };
@@ -310,15 +308,14 @@ export default function Home() {
         backgroundAttachment: 'fixed'
       }}
     >
-      {/* Fondo con transición suave */}
       <div className="absolute inset-0 bg-[#FDFBF7]/85 backdrop-blur-sm z-0 pointer-events-none transition-all duration-700"></div>
+      
       <ActionAlert message="Manga eliminado de la bóveda" isVisible={showAlert} />
+      
       <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 flex-1 flex flex-col animate-in fade-in duration-700">
         
-        {/* HEADER MEJORADO VISUALMENTE */}
         <header className="mb-8 pt-4 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-300/50">
           <div className="flex items-center gap-4">
-            {/* Ícono de Bóveda/Libro interactivo */}
             <div className="bg-slate-800 text-[#FDFBF7] p-3.5 rounded-2xl shadow-md transform transition hover:scale-105 hover:rotate-3 cursor-default">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -341,7 +338,6 @@ export default function Home() {
           isStatusLoading={isStatusLoading}
         />
 
-        {/* Animación de entrada para los filtros */}
         <div className="animate-in slide-in-from-bottom-4 fade-in duration-500">
           {(activeEndpoint === 'Top' || previousEndpoint === 'Top') && (
             <FilterBar 
@@ -355,16 +351,12 @@ export default function Home() {
           )}
         </div>
 
-        {/* BARRA DE BÚSQUEDA DE RECOMENDACIONES */}
         <RecommendationBar 
           activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
           onSearch={handleSearchRecommendations}
           isLoading={loading}
         />
 
-        {/* BARRA DE BÚSQUEDA DE RECOMENDACIONES (Si ya la tienes) */}
-        
-        {/* NUEVA BARRA DE BÚSQUEDA DE ID */}
         <SearchIdBar 
           activeEndpoint={activeEndpoint === 'Estatus API' || activeEndpoint === 'Sincronizar' ? previousEndpoint : activeEndpoint}
           onSearch={handleSearchById}
@@ -376,12 +368,12 @@ export default function Home() {
           onSearch={handleSearchByName}
           isLoading={loading}
         />
+        
         <section aria-label="Resultados de Mangas" className="flex-1 flex flex-col animate-in fade-in duration-700 delay-150">
           
           {loading && slowLoading && (
             <div className="flex justify-center mb-8">
               <div className="bg-white/80 backdrop-blur-md border border-amber-200 text-amber-800 px-5 py-3 rounded-2xl flex items-center gap-4 shadow-lg shadow-amber-900/5 animate-in slide-in-from-top-4 fade-in duration-300">
-                {/* Ping de radar en lugar del emoji de café para un look más técnico */}
                 <div className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
@@ -393,12 +385,12 @@ export default function Home() {
             </div>
           )}
 
-          {/* LÓGICA DE RENDERIZADO: Si estamos en "Buscar ID", mostramos la tarjeta Premium */}
           {previousEndpoint === 'Buscar ID' ? (
             <SingleMangaDetail 
               loading={loading} 
               error={apiError} 
               manga={mangas[0] || null} 
+              onToggle={handleActionComplete}
             />
           ) : (
             <MangaGrid 
@@ -414,7 +406,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* FOOTER SUTIL PARA CERRAR EL DISEÑO */}
         <footer className="mt-12 py-6 border-t border-slate-300/40 text-center text-slate-400 text-sm font-medium">
           MangaVault © {new Date().getFullYear()} — Bóveda de colecciones
         </footer>
