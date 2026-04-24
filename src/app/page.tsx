@@ -331,20 +331,20 @@ export default function Home() {
   };
 
   const handleActionComplete = (action?: 'added' | 'removed', id?: number | string) => {
-    // 1. Mensaje dinámico según la acción
+    // Definimos el mensaje según lo que pasó
     if (action === 'added') {
-      setAlertMessage('Manga guardado en la bóveda ✨');
+      setAlertMessage('¡Manga guardado en tu bóveda! ✨');
     } else {
       setAlertMessage('Manga eliminado de la bóveda 🗑️');
       
-      // 2. BORRADO OPTIMISTA: Si estamos en Favoritos, lo quitamos de la pantalla al instante
+      // 🚀 BORRADO OPTIMISTA: Si estamos en Favoritos, lo quitamos del estado local de inmediato
       if (activeEndpoint === 'Ver Favoritos' && id) {
         setMangas(prev => prev.filter(m => m.id !== id));
       }
     }
 
     setShowAlert(true);
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey(prev => prev + 1); // Recarga real de fondo
     setTimeout(() => setShowAlert(false), 3000);
   };
 
