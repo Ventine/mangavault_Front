@@ -15,6 +15,8 @@ import SearchIdBar from '@/src/components/SearchIdBar';
 import SingleMangaDetail from '@/src/components/SingleMangaDetail';
 import SearchNameBar from '@/src/components/SearchNameBar';
 import ActionAlert from '@/src/components/ActionAlert';
+import { VaultStats } from '@/src/types/stats';
+import VaultStatsPanel from '@/src/components/VaultStatsPanel';
 
 export default function Home() {
   // --- ESTADOS DE MANGAS ---
@@ -42,6 +44,7 @@ export default function Home() {
 
   const [showAlert, setShowAlert] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [statsData, setStatsData] = useState<VaultStats | null>(null);
 
   // 1. EFECTO: CARGAR MANGAS
   useEffect(() => {
@@ -96,7 +99,7 @@ export default function Home() {
       fetchMangas();
       setPreviousEndpoint('Top');
     } 
-    else if (!['Estatus API', 'Sincronizar', 'Agregar Favorito'].includes(activeEndpoint)) {
+    else if (!['Estatus API', 'Sincronizar', 'Agregar Favorito', 'Estadísticas'].includes(activeEndpoint)) {
       setMangas([]);
       setLoading(false);
       setApiError(null);
@@ -203,11 +206,47 @@ export default function Home() {
         setLoading(false);
       }
     };
+    
 
     if (activeEndpoint === 'Ver Favoritos') {
       fetchFavorites();
     }
   }, [activeEndpoint, page, refreshKey]);
+
+  // --- FUNCIÓN DE ESTADÍSTICAS (GET) ---
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true);
+      setApiError(null);
+      setPreviousEndpoint('Estadísticas');
+      
+      try {
+        const response = await fetch('/api/v1/mangas/vault/stats');
+        
+        // Si no hay datos (204 No Content)
+        if (response.status === 204) {
+          setStatsData({ totalMangas: 0, averageScore: 0, countByStatus: {} });
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok) throw new Error('No se pudieron cargar las estadísticas.');
+        
+        const data = await response.json();
+        setStatsData(data);
+      } catch (error: any) {
+        console.error("Error Stats:", error);
+        setApiError(error.message);
+        setStatsData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (activeEndpoint === 'Estadísticas') {
+      fetchStats();
+    }
+  }, [activeEndpoint, refreshKey]); // El refreshKey asegura que se actualicen si eliminas un manga
 
   // --- FUNCIÓN DE BÚSQUEDA DE RECOMENDACIONES ---
   const handleSearchRecommendations = async (id: string) => {
@@ -385,7 +424,13 @@ export default function Home() {
             </div>
           )}
 
-          {previousEndpoint === 'Buscar ID' ? (
+          {previousEndpoint === 'Estadísticas' ? (
+            <VaultStatsPanel 
+              loading={loading} 
+              error={apiError} 
+              stats={statsData} 
+            />
+          ) : previousEndpoint === 'Buscar ID' ? (
             <SingleMangaDetail 
               loading={loading} 
               error={apiError} 
