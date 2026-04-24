@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 interface Props {
   mangaId?: number | string;
   isInitiallyFavorite?: boolean;
-  onToggle?: () => void;
-  displayMode?: 'icon' | 'text'; // 'icon' para grillas, 'text' para detalle
+  // NUEVO: El botón ahora avisa qué hizo y sobre qué ID
+  onToggle?: (action: 'added' | 'removed', id: number | string) => void;
+  displayMode?: 'icon' | 'text';
 }
 
 export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, onToggle, displayMode = 'icon' }: Props) {
@@ -14,20 +15,13 @@ export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, o
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isFavorite, setIsFavorite] = useState(isInitiallyFavorite);
 
-  // EFECTO CLAVE: Consultar a la bóveda si este manga ya existe al montar el componente
   useEffect(() => {
     const checkVault = async () => {
-      // Si no tenemos ID o ya sabemos que es favorito, no hacemos peticiones innecesarias
       if (!mangaId || isInitiallyFavorite) return;
-      
       try {
         const response = await fetch(`/api/v1/mangas/vault/${mangaId}`);
-        // Si el backend responde con 200 OK, significa que SÍ está en la bóveda
-        if (response.ok) {
-          setIsFavorite(true);
-        }
+        if (response.ok) setIsFavorite(true);
       } catch (err) {
-        // Si responde 404 o falla, lo dejamos como no favorito
         setIsFavorite(false);
       }
     };
@@ -42,22 +36,24 @@ export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, o
     
     setIsProcessing(true);
     setStatus('idle');
+    let currentAction: 'added' | 'removed' = 'added';
 
     try {
       if (isFavorite) {
-        // Si ya es favorito, lo eliminamos (DELETE)
         const response = await fetch(`/api/v1/mangas/vault/${mangaId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error();
         setIsFavorite(false);
+        currentAction = 'removed';
       } else {
-        // Si no es favorito, lo agregamos (POST)
         const response = await fetch(`/api/v1/mangas/vault/${mangaId}`, { method: 'POST' });
         if (!response.ok) throw new Error();
         setIsFavorite(true);
+        currentAction = 'added';
       }
 
       setStatus('success');
-      if (onToggle) onToggle(); // Avisamos a la página para que muestre la alerta/recargue
+      // ENVIAMOS LA ACCIÓN EXACTA HACIA ARRIBA
+      if (onToggle) onToggle(currentAction, mangaId);
       setTimeout(() => setStatus('idle'), 2000);
     } catch (error) {
       setStatus('error');
@@ -67,7 +63,6 @@ export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, o
     }
   };
 
-  // MODO TEXTO (Para la vista de Detalle Completo)
   if (displayMode === 'text' && isFavorite && status !== 'error') {
     return (
       <div className="absolute top-4 right-4 animate-in zoom-in duration-300 z-20">
@@ -92,12 +87,11 @@ export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, o
     );
   }
 
-  // MODO ICONO (Para las grillas normales)
   return (
     <button
       onClick={handleToggleFavorite}
       disabled={isProcessing}
-      title={isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+      title={isInitiallyFavorite ? "Eliminar de la bóveda" : (isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos")}
       className={`absolute top-3 right-3 p-2.5 rounded-full backdrop-blur-md shadow-sm transition-all duration-300 z-20 outline-none
         ${isProcessing ? 'bg-slate-100/80 cursor-wait' : 'bg-white/70 hover:bg-rose-50 cursor-pointer hover:scale-110'}
         ${status === 'error' ? 'bg-rose-100/90 ring-2 ring-rose-400' : ''}
@@ -105,6 +99,11 @@ export default function FavoriteButton({ mangaId, isInitiallyFavorite = false, o
     >
       {isProcessing ? (
         <div className="animate-spin h-5 w-5 border-2 border-rose-500 border-t-transparent rounded-full" />
+      ) : isInitiallyFavorite ? (
+        // NUEVO: Si estamos dentro de la bóveda, mostramos un Bote de Basura
+        <svg className="w-5 h-5 transition-colors text-rose-500 hover:text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
       ) : (
         <svg className={`w-5 h-5 transition-colors ${isFavorite ? 'text-rose-500' : 'text-slate-400 group-hover:text-rose-400'}`} fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>

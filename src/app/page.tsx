@@ -45,6 +45,7 @@ export default function Home() {
   const [showAlert, setShowAlert] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [statsData, setStatsData] = useState<VaultStats | null>(null);
+  const [alertMessage, setAlertMessage] = useState('');
 
   // 1. EFECTO: CARGAR MANGAS
   useEffect(() => {
@@ -329,12 +330,22 @@ export default function Home() {
     }
   };
 
-  const handleActionComplete = () => {
-    if (activeEndpoint === 'Ver Favoritos' || previousEndpoint === 'Buscar ID' || previousEndpoint === 'Buscar Nombre') {
-      setShowAlert(true);
-      setRefreshKey(prev => prev + 1);
-      setTimeout(() => setShowAlert(false), 3000);
+  const handleActionComplete = (action?: 'added' | 'removed', id?: number | string) => {
+    // 1. Mensaje dinámico según la acción
+    if (action === 'added') {
+      setAlertMessage('Manga guardado en la bóveda ✨');
+    } else {
+      setAlertMessage('Manga eliminado de la bóveda 🗑️');
+      
+      // 2. BORRADO OPTIMISTA: Si estamos en Favoritos, lo quitamos de la pantalla al instante
+      if (activeEndpoint === 'Ver Favoritos' && id) {
+        setMangas(prev => prev.filter(m => m.id !== id));
+      }
     }
+
+    setShowAlert(true);
+    setRefreshKey(prev => prev + 1);
+    setTimeout(() => setShowAlert(false), 3000);
   };
 
   return (
@@ -349,7 +360,7 @@ export default function Home() {
     >
       <div className="absolute inset-0 bg-[#FDFBF7]/85 backdrop-blur-sm z-0 pointer-events-none transition-all duration-700"></div>
       
-      <ActionAlert message="Manga eliminado de la bóveda" isVisible={showAlert} />
+      <ActionAlert message={alertMessage} isVisible={showAlert} />
       
       <div className="relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6 flex-1 flex flex-col animate-in fade-in duration-700">
         

@@ -9,7 +9,7 @@ interface Props {
   hasNextPage: boolean;
   activeEndpoint: string;
   error: string | null;
-  onRefresh?: () => void;
+  onRefresh?: (action: 'added' | 'removed', id: number | string) => void;
 }
 
 export default function MangaGrid({ loading, mangas, page, setPage, hasNextPage, activeEndpoint, error, onRefresh }: Props) {

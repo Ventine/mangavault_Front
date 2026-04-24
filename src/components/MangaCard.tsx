@@ -7,7 +7,7 @@ import FavoriteButton from './FavoriteButton'; // <-- NUEVA IMPORTACIÓN
 interface Props {
   manga: MangaItem;
   isFavoriteView?: boolean; // <-- NUEVO: Para saber si estamos viendo la bóveda
-  onToggle?: () => void;
+  onToggle?: (action: 'added' | 'removed', id: number | string) => void;
 }
 
 export default function MangaCard({ manga, isFavoriteView = false, onToggle }: Props) {
